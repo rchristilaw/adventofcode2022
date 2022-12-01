@@ -1,11 +1,10 @@
+import lombok.extern.slf4j.Slf4j;
+
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.util.List;
-import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
+@Slf4j
 public class Day01 extends BaseDay {
-    private final static Logger log = Logger.getLogger(Day01.class.getName());
     private final static String inputFile = "day01.txt";
 
     public static void main(String... args) throws URISyntaxException, IOException {
@@ -23,6 +22,6 @@ public class Day01 extends BaseDay {
     public void runPart2() throws URISyntaxException, IOException {
         final var input = readClassPathResource(inputFile);
 
-        log.info("Restults");
+        log.info("Results");
     }
 }
