@@ -8,9 +8,9 @@ public class DayXX extends BaseDay {
     private final static String inputFile = "dayXX.txt";
 
     public static void main(String... args) throws URISyntaxException, IOException {
-        final var dayXX = new DayXX();
-        dayXX.runPart1();
-        dayXX.runPart2();
+        final var day = new DayXX();
+        day.runPart1();
+        day.runPart2();
     }
 
     public void runPart1() throws URISyntaxException, IOException {
