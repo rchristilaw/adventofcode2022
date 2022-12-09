@@ -22,7 +22,7 @@ public class Day09 extends BaseDay {
 
         final var grid = new Grid();
         for (final var instruction : instructions)  {
-            grid.updatePosition(instruction.direction, instruction.steps);
+            updatePosition(instruction.direction, instruction.steps, grid, false);
         }
 
 
@@ -35,9 +35,88 @@ public class Day09 extends BaseDay {
     }
 
     public void runPart2() throws URISyntaxException, IOException {
-        final var input = readClassPathResource(inputFile);
+        final var instructions = readClassPathResource(inputFile).lines()
+            .map(Instruction::parseInstruction)
+            .toList();
 
-        log.info("Results: {}", 0);
+        final var grid = new Grid();
+        for (final var instruction : instructions)  {
+            updatePosition(instruction.direction, instruction.steps, grid, true);
+        }
+
+
+        int count = 0;
+        for (final var set : grid.getHistory().entrySet()) {
+            count += set.getValue().size();
+        }
+
+        log.info("Results: {}", count);
+    }
+
+    private Coords getCoordsDelta(Coords head, Coords tail) {
+        final var coordsDelta = new Coords();
+        coordsDelta.x = head.x - tail.x;
+        coordsDelta.y = head.y - tail.y;
+        return coordsDelta;
+    }
+
+    public void updatePosition(Character direction, int steps, Grid grid, boolean part2) {
+        for (int step = 0; step < steps; step++) {
+            if (direction == 'L') {
+                grid.head.x -= 1;
+            } else if (direction == 'R') {
+                grid.head.x += 1;
+            } else if (direction == 'U') {
+                grid.head.y += 1;
+            } else if (direction == 'D') {
+                grid.head.y -= 1;
+            } else {
+                throw new RuntimeException();
+            }
+
+            var head = grid.head;
+            if (!part2) {
+                updateTail(head, grid.tail);
+                updateHistory(grid, grid.tail);
+            } else {
+                for (var tail : grid.tails) {
+                    updateTail(head, tail);
+                    head = tail;
+                }
+                updateHistory(grid, grid.tails.get(8));
+            }
+        }
+    }
+
+    private void updateHistory(Grid grid, Coords tail) {
+        final var history = grid.history;
+        history.computeIfAbsent(tail.x, k -> new HashSet<Integer>());
+        history.get(tail.x).add(tail.y);
+    }
+
+    private void updateTail(Coords head, Coords tail) {
+        final var coordDelta = getCoordsDelta(head, tail);
+        if (coordDelta.x > 1 && coordDelta.y >= 1 || coordDelta.x >= 1 && coordDelta.y > 1) {
+            tail.x++;
+            tail.y++;
+        } else if (coordDelta.x > 1 && coordDelta.y <= -1 || coordDelta.x >= 1 && coordDelta.y < -1) {
+            tail.x++;
+            tail.y--;
+        } else if (coordDelta.x < -1 && coordDelta.y >= 1 || coordDelta.x <= -1 && coordDelta.y > 1) {
+            tail.x--;
+            tail.y++;
+        } else if (coordDelta.x < -1 && coordDelta.y <= -1 || coordDelta.x <= -1 && coordDelta.y < -1) {
+            tail.x--;
+            tail.y--;
+        } else if (coordDelta.x > 1) {
+            tail.x++;
+        } else if (coordDelta.y > 1) {
+            tail.y++;
+        } else if (coordDelta.x < -1) {
+            tail.x--;
+        } else if (coordDelta.y < -1) {
+            tail.y--;
+        }
     }
 
     @Data
@@ -53,61 +132,6 @@ public class Day09 extends BaseDay {
             for (int i = 0; i < 9; i++) {
                 tails.add(new Coords());
             }
-        }
-        public void updatePosition(Character direction, int steps) {
-
-            for (int step = 0; step < steps; step++) {
-                if (direction == 'L') {
-                    head.x -= 1;
-                } else if (direction == 'R') {
-                    head.x += 1;
-                } else if (direction == 'U') {
-                    head.y += 1;
-                } else if (direction == 'D') {
-                    head.y -= 1;
-                } else {
-                    throw new RuntimeException();
-                }
-                updateTail();
-                updateHistory();
-            }
-
-        }
-
-        private void updateTail() {
-            final var coordDelta = getCoordsDelta();
-            if (coordDelta.x > 1 && coordDelta.y == 1 || coordDelta.x == 1 && coordDelta.y > 1) {
-                tail.x++;
-                tail.y++;
-            } else if (coordDelta.x > 1 && coordDelta.y == -1 || coordDelta.x == 1 && coordDelta.y < -1) {
-                tail.x++;
-                tail.y--;
-            } else if (coordDelta.x < -1 && coordDelta.y == 1 || coordDelta.x == -1 && coordDelta.y > 1) {
-                tail.x--;
-                tail.y++;
-            } else if (coordDelta.x < -1 && coordDelta.y == -1 || coordDelta.x == -1 && coordDelta.y < -1) {
-                tail.x--;
-                tail.y--;
-            } else if (coordDelta.x > 1) {
-                tail.x++;
-            } else if (coordDelta.y > 1) {
-                tail.y++;
-            } else if (coordDelta.x < -1) {
-                tail.x--;
-            } else if (coordDelta.y < -1) {
-                tail.y--;
-            }
-        }
-
-        private Coords getCoordsDelta() {
-            final var coordsDelta = new Coords();
-            coordsDelta.x = head.x - tail.x;
-            coordsDelta.y = head.y - tail.y;
-            return coordsDelta;
-        }
-        private void updateHistory() {
-            history.computeIfAbsent(tail.x, k -> new HashSet<Integer>());
-            history.get(tail.x).add(tail.y);
         }
     }
 
