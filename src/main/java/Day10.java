@@ -2,6 +2,8 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.List;
 
 @Slf4j
 public class Day10 extends BaseDay {
@@ -47,7 +49,6 @@ public class Day10 extends BaseDay {
             }
 
 
-
             cycle++;
         }
 
@@ -56,9 +57,68 @@ public class Day10 extends BaseDay {
     }
 
     public void runPart2() throws URISyntaxException, IOException {
-        final var input = readClassPathResource(inputFile);
+        final var instructions = readClassPathResource(inputFile).lines()
+            .map(Instruction::parseInstruction)
+            .toList();
 
-        log.info("Results: {}", 0);
+
+        long signalStrength = 0;
+        int cycle = 0;
+        int pixelPos = 0;
+        int spritePos = 1;
+        int instructionCount = 0;
+        boolean addCycle = false;
+
+        final var crt = new ArrayList<List<Character>>();
+        var currentRow = new ArrayList<Character>();
+
+        while (cycle <= 240) {
+            if (instructionCount > instructions.size() - 1) {
+                crt.add(currentRow);
+                break;
+            }
+
+            if (cycle == 40 || cycle == 80 || cycle == 120 || cycle == 160 || cycle == 200 || cycle == 240) {
+                crt.add(currentRow);
+                currentRow = new ArrayList<Character>();
+                pixelPos = 0;
+            }
+
+            if (pixelPos == spritePos || pixelPos == spritePos - 1 || pixelPos == spritePos + 1) {
+                currentRow.add('#');
+            } else {
+                currentRow.add('.');
+            }
+
+            if (instructions.get(instructionCount).addVal != null) {
+                if (addCycle) {
+                    spritePos += instructions.get(instructionCount).addVal;
+                    addCycle = false;
+                    instructionCount++;
+                } else {
+                    addCycle = true;
+                }
+            } else {
+                addCycle = false;
+                instructionCount++;
+            }
+
+            pixelPos++;
+            cycle++;
+        }
+
+        var printRow = "";
+        printRow += '\n';
+        for (final var row : crt) {
+
+            for (final var col : row) {
+                printRow += col.toString();
+            }
+            printRow += '\n';
+        }
+        log.info(printRow);
+        log.info("Results: {}", signalStrength);
+        //EHPZPJGL
     }
 
     public record Instruction(Integer addVal) {
