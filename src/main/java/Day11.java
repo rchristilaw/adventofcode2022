@@ -23,11 +23,11 @@ public class Day11 extends BaseDay {
 
         int round = 1;
 
-        while (round <= 20) {
+        while (round <= 10000) {
             for (final var monkey : monkeys) {
                 while (monkey.items.size() > 0) {
                     final var item = monkey.items.remove();
-                    final var result = monkey.executeAction(item.worryLevel) / 3;
+                    final var result = monkey.executeAction(item.worryLevel) % 9699690;
                     final var divisible = monkey.evaluateResult(result);
 
                     if (divisible) {
@@ -55,7 +55,7 @@ public class Day11 extends BaseDay {
     @Data
     @AllArgsConstructor
     public static class Item {
-        int worryLevel;
+        long worryLevel;
     }
 
     @Builder
@@ -64,13 +64,13 @@ public class Day11 extends BaseDay {
         @Builder.Default
         Queue<Item> items = new LinkedList<>();
         Action action;
-        int actionValue;
-        int divisor;
+        long actionValue;
+        long divisor;
         int trueMonkey;
         int falseMonkey;
-        int itemCount;
+        long itemCount;
 
-        int executeAction(int input) {
+        long executeAction(long input) {
             if (this.action == Action.ADD) {
                 return input + actionValue;
             } else if (this.action == Action.MULTIPLY && actionValue == -1) {
@@ -80,7 +80,7 @@ public class Day11 extends BaseDay {
             }
         }
 
-        boolean evaluateResult(int input) {
+        boolean evaluateResult(long input) {
             return input % divisor == 0;
         }
     }
