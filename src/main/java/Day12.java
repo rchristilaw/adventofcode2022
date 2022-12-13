@@ -2,10 +2,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.PriorityQueue;
+import java.util.*;
 
 @Slf4j
 public class Day12 extends BaseDay {
@@ -32,6 +29,12 @@ public class Day12 extends BaseDay {
 
         int distance = getShortestTrip(grid, start, end);
         log.info("Results: {}", distance);
+
+        int bestDist = distance;
+        for (var currentStart : grid.findACoords()) {
+            bestDist = Math.min(bestDist, getShortestTrip(grid, currentStart, end));
+        }
+        log.info("Results: {}", bestDist);
     }
 
     public void runPart2() throws URISyntaxException, IOException {
@@ -122,6 +125,18 @@ public class Day12 extends BaseDay {
 
         public void resetPos() {
             grid.stream().flatMap(Collection::stream).forEach(Coord::resetDistance);
+        }
+
+        public List<Coord> findACoords() {
+            final var aCoords = new ArrayList<Coord>();
+            for (List<Coord> row : grid) {
+                for (Coord coord : row) {
+                    if (coord.elevation == 'a') {
+                        aCoords.add(coord);
+                    }
+                }
+            }
+            return aCoords;
         }
     }
 
