@@ -5,23 +5,19 @@ import java.net.URISyntaxException;
 
 @Slf4j
 public class DayXX extends BaseDay {
-    private final static String inputFile = "dayXX.txt";
 
     public static void main(String... args) throws URISyntaxException, IOException {
         final var day = new DayXX();
-        day.runPart1();
-        day.runPart2();
+
+        final var input = getInput(day.getClass(), false);
+        day.run(input);
     }
 
-    public void runPart1() throws URISyntaxException, IOException {
-        final var input = readClassPathResource(inputFile);
+    public void run(String input) {
 
-        log.info("Results: {}", 0);
-    }
+        log.info("Part 1 solution: {}", 0);
 
-    public void runPart2() throws URISyntaxException, IOException {
-        final var input = readClassPathResource(inputFile);
 
-        log.info("Results: {}", 0);
+        log.info("Part 2 solution: {}", 0);
     }
 }

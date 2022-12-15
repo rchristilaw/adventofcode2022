@@ -13,4 +13,11 @@ public class BaseDay {
         Objects.requireNonNull(resource, "Expected to find a classpath resource with name " + resourceName);
         return Files.readString(Paths.get(resource.toURI()), StandardCharsets.UTF_8);
     }
+
+    protected static String getInput(Class<?> clazz, boolean isTest) throws URISyntaxException, IOException {
+        final var resourceName = (isTest ? clazz.getName() + "_TEST" : clazz.getName()) + ".txt";
+        final URL resource = clazz.getResource(resourceName);
+        Objects.requireNonNull(resource, "Expected to find a classpath resource with name " + resourceName);
+        return Files.readString(Paths.get(resource.toURI()), StandardCharsets.UTF_8);
+    }
 }
