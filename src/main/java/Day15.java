@@ -12,15 +12,12 @@ public class Day15 extends BaseDay {
 
     public static void main(String... args) throws URISyntaxException, IOException {
         final var day = new Day15();
-        day.runPart1();
-        day.runPart2();
+        day.run(getInput(day.getClass(), false));
     }
 
-    public void runPart1() throws URISyntaxException, IOException {
-        final var input = readClassPathResource(inputFile).lines().toList();
-
+    public void run(String input) throws URISyntaxException, IOException {
         final var grid = new Grid();
-        for (var line : input) {
+        for (var line : input.lines().toList()) {
             final var lineSplit = line.split(" ");
 
             final var sensorCoord = new Coord(extractNumber(lineSplit[2]), extractNumber(lineSplit[3]));
@@ -28,19 +25,15 @@ public class Day15 extends BaseDay {
             grid.sensors.add(new Sensor(sensorCoord, beaconCoord));
         }
 
-//        final var coveredAreaLine = grid.coveredAreaOfY(10);
-
-//        final var coveredArea = (long) grid.getCoveredArea(10).size();
-
         final var minX = grid.sensors.stream()
-            .map(Sensor::getMinXRange)
-            .min(Comparator.naturalOrder()).orElse(0);
+                .map(Sensor::getMinXRange)
+                .min(Comparator.naturalOrder()).orElse(0);
 
         final var maxX = grid.sensors.stream()
-            .map(Sensor::getMaxXRange)
-            .max(Comparator.naturalOrder()).orElse(0);
+                .map(Sensor::getMaxXRange)
+                .max(Comparator.naturalOrder()).orElse(0);
 
-        final var searchY = 2000000;
+        final var searchY = 10;
         var coveredArea = 0L;
         for (int x = minX; x < maxX; x++) {
             if (grid.isCovered(x, searchY)) {
@@ -49,13 +42,16 @@ public class Day15 extends BaseDay {
         }
         log.info("Results: {}", coveredArea);
 
-        for (int x = 0; x <= 4000000; x++) {
-            for (int y = 0; y <= 4000000; y++) {
-                if (!grid.isCovered(x, y) || !grid.isCovered(4000000 - x, 4000000 - y)
-                    || !grid.isCovered(4000000 -x, y) || !grid.isCovered(4000000, 4000000 - y)) {
-                    log.info("FOUND COORD : {}, {}. FREQ = {}", x, y, x*4000000 + y);
-                    break;
-                }
+        final var uncovered = new HashSet<Coord>();
+        for (var sensor : grid.sensors) {
+            uncovered.addAll(
+                    sensor.getBorderedCoords().stream()
+                            .filter(it -> !grid.isCovered(it.x, it.y))
+                            .toList());
+        }
+        for (var u : uncovered) {
+            if (u.x >= 0 && u.x <= 4000000 && u.y >= 0 && u.y <= 4000000) {
+                log.info("Results: {}", u);
             }
         }
     }
@@ -63,16 +59,9 @@ public class Day15 extends BaseDay {
     private int extractNumber(String string) {
         final var split = string.split("=");
         final var sanitizedString = split[1]
-            .replaceAll(",", "").replaceAll(":", "");
+                .replaceAll(",", "").replaceAll(":", "");
         return Integer.parseInt(sanitizedString);
     }
-
-    public void runPart2() throws URISyntaxException, IOException {
-        final var input = readClassPathResource(inputFile);
-
-        log.info("Results: {}", 0);
-    }
-
 
     public static class Grid {
         List<Sensor> sensors = new ArrayList<>();
@@ -80,36 +69,36 @@ public class Day15 extends BaseDay {
         Set<Coord> getCoveredArea(Integer yRow) {
             final var area = new HashSet<Coord>();
             final var sensorLocations = sensors.stream()
-                .map(it -> it.closestBeacon).collect(Collectors.toCollection(HashSet::new));
+                    .map(it -> it.closestBeacon).collect(Collectors.toCollection(HashSet::new));
 
             for (var sensor : sensors) {
                 area.addAll(sensor.getCoveredCoords(yRow));
             }
 
             return area.stream()
-                .filter(it -> !sensorLocations.contains(it)).collect(Collectors.toSet());
+                    .filter(it -> !sensorLocations.contains(it)).collect(Collectors.toSet());
         }
 
         long coveredAreaOfY(int y) {
             return sensors.stream()
-                .map(it -> it.getCoordsCoveringY(y))
-                .reduce(0L, Long::sum);
+                    .map(it -> it.getCoordsCoveringY(y))
+                    .reduce(0L, Long::sum);
         }
 
         boolean isCovered(int x, int y) {
             final var currentCoord = new Coord(x, y);
             final var isBeacon = sensors.stream()
-                .anyMatch(it -> it.closestBeacon.equals(currentCoord));
+                    .anyMatch(it -> it.closestBeacon.equals(currentCoord));
 
             final var isSensor = sensors.stream()
-                .anyMatch(it -> it.coord.equals(currentCoord));
+                    .anyMatch(it -> it.coord.equals(currentCoord));
 
             if (isBeacon) {
                 return false;
             }
 
             return sensors.stream()
-                .anyMatch(it -> it.isInRange(currentCoord));
+                    .anyMatch(it -> it.isInRange(currentCoord));
 
         }
     }
@@ -150,10 +139,25 @@ public class Day15 extends BaseDay {
             return coords;
         }
 
+        public Set<Coord> getBorderedCoords() {
+            final var coords = new HashSet<Coord>();
+            final var absDistance = getAbsDistance();
+
+            final var maxDistance = absDistance + 1;
+
+            for (int x = -maxDistance; x <= maxDistance; x++) {
+                final var yRange = x < 0 ? x + maxDistance : maxDistance - x;
+                coords.add(new Coord(coord.x + x, coord.y - yRange));
+                coords.add(new Coord(coord.x + x, coord.y + yRange));
+            }
+
+            return coords;
+        }
+
         public long getCoordsCoveringY(int y) {
             return getCoveredCoords(y).stream()
-                .filter(it -> it.y == y)
-                .count();
+                    .filter(it -> it.y == y)
+                    .count();
         }
 
         public boolean isInRange(Coord other) {
