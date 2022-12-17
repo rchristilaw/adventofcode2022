@@ -1,10 +1,9 @@
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -23,47 +22,141 @@ public class Day16 extends BaseDay {
             .map(Valve::new)
             .collect(Collectors.toMap(Valve::getName, Function.identity()));
 
-        int minute = 0;
+        final var path = new Path();
+        final var history = new History();
+        history.valves = valves;
+        history.pathMaxPressure = new HashMap<String, Integer>();
 
-        int maxPressure = navigate(valves, minute, "AA", 0, 0);
+        var maxPath = navigate(history, "AA", path);
 
-
-
-        log.info("Part 1 solution: {}", maxPressure);
+        log.info("Part 1 solution: {}", maxPath.pressureSum);
 
 
         log.info("Part 2 solution: {}", 0);
     }
 
-    public int navigate(Map<String, Valve> valves, int minute, String destination, int pressurePerMinute, int pressureSum) {
-        minute++;
-        if (minute > 30) {
+    public Path navigate(History history, String destination, Path path) {
+        path.minute++;
+        if (path.minute > 30) {
+            return path;
+        }
+
+        path.pressureSum += path.getMaxPressurePerMinute();
+
+        long countNonZeroValves = history.valves.values().stream()
+            .filter(it -> it.flowRate > 0)
+            .count();
+
+        final var pathLength = path.path.length();
+
+        if (path.openValves.size() >= countNonZeroValves
+            || (pathLength >= 4
+            && path.path.substring(pathLength - 4, pathLength - 2).equals(destination))
+            || (pathLength >= 6
+            && path.path.substring(pathLength - 6, pathLength - 4).equals(destination)
+            && !path.path.substring(pathLength - 4, pathLength - 2).equals(destination))
+            || (pathLength >= 8
+            && path.path.substring(pathLength - 8, pathLength - 6).equals(destination)
+            && !path.path.substring(pathLength - 6, pathLength - 4).equals(destination))
+        ) {
+//            if (path.openValves.size() < countNonZeroValves) {
+//                return path;
+//            }
+
+            while (true) {
+                path.minute++;
+                if (path.minute > 30) {
+                    return path;
+                }
+
+                path.pressureSum += path.getMaxPressurePerMinute();
+            }
+        }
+
+        path.path += destination;
+
+//        final var existingPath = history.pathMaxPressure.get(path.path);
+//        if (existingPath != null) {
+//            path.setMaxPressurePerMinute(existingPath);
+//            navigate(history, destination, path);
+//        }
+
+//        long countNonZeroValves = history.valves.values().stream()
+//            .filter(it -> it.flowRate > 0)
+//            .count();
+//
+//        if (path.openValves.size() >= countNonZeroValves) {
+//            history.pathMaxPressure.put(path.path, path.getMaxPressurePerMinute());
+//            return navigate(history, destination, path);
+//        }
+
+        final var valve = history.valves.get(destination);
+
+        Path openedPath = null;
+        if (valve.flowRate != 0 && !path.alreadyOpened(valve.name)) {
+            path.openValves.add(valve);
+            openedPath = navigate(history, destination, new Path(path));
+        }
+
+        final Path maxPressureNot = valve.connectedValveNames.parallelStream()
+            .map(it -> navigate(history, it, new Path(path)))
+            .max(Comparator.comparing(Path::getPressureSum))
+            .orElse(null);
+
+        if (openedPath != null && openedPath.pressureSum > Objects.requireNonNull(maxPressureNot).pressureSum) {
+            return openedPath;
+        } else {
+            return maxPressureNot;
+        }
+    }
+
+
+    public static class History {
+        Map<String, Valve> valves;
+        Map<String, Integer> pathMaxPressure;
+    }
+
+    @NoArgsConstructor
+    public class Path {
+        List<Valve> openValves = new ArrayList<>();
+        String path = "";
+        int pressureSum = 0;
+
+        Integer maxPressurePerMinute;
+        int minute;
+
+        public Path(Path other) {
+            this.openValves = new ArrayList<>(other.openValves);
+            this.path = other.path;
+            this.pressureSum = other.pressureSum;
+            this.maxPressurePerMinute = other.maxPressurePerMinute;
+            this.minute = other.minute;
+        }
+
+        public int getPressureSum() {
             return pressureSum;
         }
 
-        pressureSum += pressurePerMinute;
-
-        final var valve = valves.get(destination);
-        if (valve.flowRate > 0 && !valve.open) {
-            valve.open = true;
-            pressurePerMinute += valve.flowRate;
-            minute++;
+        public void setMaxPressurePerMinute(Integer val) {
+            maxPressurePerMinute = val;
         }
 
-        int maxPressure = 0;
-        for (var option : valve.connectedValveNames) {
-            final var currPressure = navigate(valves, minute, option, pressurePerMinute, pressureSum);
-            if (currPressure > maxPressure) {
-                maxPressure = currPressure;
-            }
+        public int getMaxPressurePerMinute() {
+            return openValves.stream()
+                .map(it -> it.flowRate)
+                .reduce(0, Integer::sum);
         }
-        return maxPressure;
+
+        public boolean alreadyOpened(String valveName) {
+            return openValves.stream()
+                .anyMatch(it -> it.getName().equals(valveName));
+        }
+
     }
 
     public class Valve {
         String name;
         int flowRate;
-        boolean open;
         List<String> connectedValveNames = new ArrayList<>();
 
         public Valve(String input) {
@@ -79,6 +172,7 @@ public class Day16 extends BaseDay {
         public String getName() {
             return name;
         }
+
     }
 
     private int extractNumber(String string) {
