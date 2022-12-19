@@ -25,95 +25,53 @@ public class Day16 extends BaseDay {
         final var path = new Path();
         final var history = new History();
         history.valves = valves;
-        history.pathMaxPressure = new HashMap<String, Integer>();
+        history.cachedPressure = new HashMap<>();
 
-        var maxPath = navigate(history, "AA", path);
+        var max = navigate(history, "AA", path);
 
-        log.info("Part 1 solution: {}", maxPath.pressureSum);
+        log.info("Part 1 solution: {}", max);
 
 
         log.info("Part 2 solution: {}", 0);
     }
 
-    public Path navigate(History history, String destination, Path path) {
+    public int navigate(History history, String destination, Path path) {
         path.minute++;
         if (path.minute > 30) {
-            return path;
+            return path.pressureSum;
         }
 
-        path.pressureSum += path.getMaxPressurePerMinute();
-
-        long countNonZeroValves = history.valves.values().stream()
-            .filter(it -> it.flowRate > 0)
-            .count();
-
-        final var pathLength = path.path.length();
-
-        if (path.openValves.size() >= countNonZeroValves
-            || (pathLength >= 4
-            && path.path.substring(pathLength - 4, pathLength - 2).equals(destination))
-            || (pathLength >= 6
-            && path.path.substring(pathLength - 6, pathLength - 4).equals(destination)
-            && !path.path.substring(pathLength - 4, pathLength - 2).equals(destination))
-            || (pathLength >= 8
-            && path.path.substring(pathLength - 8, pathLength - 6).equals(destination)
-            && !path.path.substring(pathLength - 6, pathLength - 4).equals(destination))
-        ) {
-//            if (path.openValves.size() < countNonZeroValves) {
-//                return path;
-//            }
-
-            while (true) {
-                path.minute++;
-                if (path.minute > 30) {
-                    return path;
-                }
-
-                path.pressureSum += path.getMaxPressurePerMinute();
-            }
+        final var cacheVal = CacheVal.buildCacheVal(path.minute, destination, path.openValves);
+        if (history.cachedPressure.containsKey(cacheVal)) {
+            return history.cachedPressure.get(cacheVal);
         }
-
-        path.path += destination;
-
-//        final var existingPath = history.pathMaxPressure.get(path.path);
-//        if (existingPath != null) {
-//            path.setMaxPressurePerMinute(existingPath);
-//            navigate(history, destination, path);
-//        }
-
-//        long countNonZeroValves = history.valves.values().stream()
-//            .filter(it -> it.flowRate > 0)
-//            .count();
-//
-//        if (path.openValves.size() >= countNonZeroValves) {
-//            history.pathMaxPressure.put(path.path, path.getMaxPressurePerMinute());
-//            return navigate(history, destination, path);
-//        }
 
         final var valve = history.valves.get(destination);
 
-        Path openedPath = null;
+        int pressureOpened = 0;
         if (valve.flowRate != 0 && !path.alreadyOpened(valve.name)) {
-            path.openValves.add(valve);
-            openedPath = navigate(history, destination, new Path(path));
+            final var newPath = new Path(path);
+            newPath.openValves.add(valve);
+            final var remainingMinutes = 30 - path.minute;
+            pressureOpened = remainingMinutes * valve.flowRate + navigate(history, destination, newPath);
         }
 
-        final Path maxPressureNot = valve.connectedValveNames.parallelStream()
-            .map(it -> navigate(history, it, new Path(path)))
-            .max(Comparator.comparing(Path::getPressureSum))
-            .orElse(null);
-
-        if (openedPath != null && openedPath.pressureSum > Objects.requireNonNull(maxPressureNot).pressureSum) {
-            return openedPath;
-        } else {
-            return maxPressureNot;
+        int pressureNotOpened = 0;
+        for (var nextValve : valve.connectedValveNames) {
+            final int currentPressure = navigate(history, nextValve, new Path(path));
+            pressureNotOpened = Math.max(pressureNotOpened, currentPressure);
         }
+
+        int max = Math.max(pressureOpened, pressureNotOpened);
+        history.cachedPressure.put(cacheVal, max);
+
+        return max;
     }
 
 
     public static class History {
         Map<String, Valve> valves;
-        Map<String, Integer> pathMaxPressure;
+        Map<CacheVal, Integer> cachedPressure;
     }
 
     @NoArgsConstructor
@@ -173,6 +131,30 @@ public class Day16 extends BaseDay {
             return name;
         }
 
+    }
+
+    public record CacheVal(int minute, String destination, List<String> openedValves) {
+
+        public static CacheVal buildCacheVal(int minute, String destination, List<Valve> openValveObjs) {
+            return new CacheVal(minute, destination, openValveObjs.stream().map(it -> it.name).sorted().toList());
+        }
+
+
+//        @Override
+//        public boolean equals(Object obj) {
+//            if (obj instanceof CacheVal o) {
+//                if (this.minute == o.minute && this.destination.equals(o.destination)
+//                    && this.openedValves.size() == o.openedValves.size()) {
+//                    for (int i = 0; i < this.openedValves.size(); i++) {
+//                        if (!this.openedValves.get(i).equals(o.openedValves.get(i))) {
+//                            return false;
+//                        }
+//                    }
+//                    return true;
+//                }
+//            }
+//            return false;
+//        }
     }
 
     private int extractNumber(String string) {
