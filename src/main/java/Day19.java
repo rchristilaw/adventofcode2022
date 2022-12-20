@@ -36,8 +36,20 @@ public class Day19 extends BaseDay {
 
         log.info("Part 1 solution: {}", part1Sum);
 
+        int part2Result = 1;
+        for (int i = 0; i < 3; i++) {
 
-        log.info("Part 2 solution: {}", 0);
+            final var path = new Path();
+            final var blueprint = blueprints.get(i);
+
+            int max = executeBlueprint(blueprint, path, 32);
+
+            log.info("Blueprint: {}: max {}", i + 1, max);
+
+            part2Result = part2Result * max;
+        }
+
+        log.info("Part 2 solution: {}", part2Result);
     }
 
     public int executeBlueprint(Blueprint blueprint, Path path, int maxMinute) {
