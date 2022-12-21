@@ -17,13 +17,16 @@ public class Day20 extends BaseDay {
     }
 
     public void run(String input) {
+        boolean part2 = true;
+        final var decryptionKey = part2 ? 811589153L : 1;
+
         AtomicInteger index = new AtomicInteger();
         var lines = input.lines()
-            .map(it -> new Line(index.getAndIncrement(), Integer.parseInt(it)))
+            .map(it -> new Line(index.getAndIncrement(), Long.parseLong(it) * decryptionKey))
             .collect(Collectors.toList());
 
 
-//        for (int round = 0; round < 1000; round++) {
+        for (int round = 0; round < (part2 ? 10 : 1); round++) {
             for (int i = 0; i < lines.size(); i++) {
 
                 int finalI = i;
@@ -31,12 +34,15 @@ public class Day20 extends BaseDay {
                     .filter(it -> it.originalIndex == finalI)
                     .findFirst().orElseThrow();
 
-                final var currentIndex = lines.indexOf(current);
-                var newIndex = currentIndex + current.value;
+                final long currentIndex = lines.indexOf(current);
+
+                if (current.value == 0) {
+                    continue;
+                }
+
+                long newIndex = currentIndex + current.value;
                 if (newIndex < 0) {
-                    while (newIndex < 0) {
-                        newIndex = (lines.size() - 1) + newIndex;
-                    }
+                    newIndex = (newIndex % (lines.size() - 1)) + (lines.size() - 1);
                 } else if (newIndex > lines.size() - 1) {
                     newIndex = newIndex % (lines.size() - 1);
                 }
@@ -45,27 +51,27 @@ public class Day20 extends BaseDay {
                     newIndex = lines.size() - 1;
                 }
 
-                if (newIndex > currentIndex) {
+                if (newIndex != currentIndex) {
                     lines.remove(current);
-                    lines.add(newIndex, current);
-                } else if (newIndex < currentIndex) {
-                    lines.remove(current);
-                    lines.add(newIndex, current);
+                    lines.add((int)newIndex, current);
                 }
 
             }
-            AtomicInteger x = new AtomicInteger();
-            lines = lines.stream()
-                .map(it -> new Line(x.getAndIncrement(), it.value))
-                .collect(Collectors.toList());
-//        }
+            log.info("{}", lines.stream().map(it -> it.value).collect(Collectors.toList()));
+//                .map(it -> new Line(x.getAndIncrement(), it.value))
+//                .collect(Collectors.toList()););
+//            AtomicInteger x = new AtomicInteger();
+//            lines = lines.stream()
+//                .map(it -> new Line(x.getAndIncrement(), it.value))
+//                .collect(Collectors.toList());
+        }
 
         final var zero = lines.stream()
             .filter(it -> it.value == 0)
             .findFirst().orElseThrow();
         final var zeroIndex = lines.indexOf(zero);
 
-        var part1 = 0;
+        long part1 = 0L;
         var next = zeroIndex + 1000;
         while (next > lines.size() - 1) {
             next = next % lines.size();
@@ -93,6 +99,6 @@ public class Day20 extends BaseDay {
     @AllArgsConstructor
     public static class Line {
         int originalIndex;
-        int value;
+        long value;
     }
 }
