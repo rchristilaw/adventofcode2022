@@ -5,6 +5,7 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -197,20 +198,157 @@ public class Day22 extends BaseDay {
     public record Coord(int x, int y, Character value, Character cube) {
     }
 
-    private Character getCube(int x, int y) {
-        if (y < 50 && x < 100) {
-            return 'A';
-        } else if (y < 50 && x >= 100) {
-            return 'B';
-        } else if (y >= 50 && y < 100) {
-            return 'C';
-        } else if (x >= 50 && y >= 100) {
-            return 'D';
-        } else if (x < 50 && y >= 100) {
-            return 'E';
-        } else if (y >= 150) {
-            return 'F';
+    private Cube getCube(int x, int y) {
+        return cubes.entrySet().stream()
+            .filter(it -> x <= it.getValue().x2 && x >= it.getValue().x1
+                && y <= it.getValue().y2 && y >= it.getValue().y1)
+            .map(Map.Entry::getValue)
+            .findFirst().orElseThrow();
+    }
+
+    public static Map<Character, Cube> cubes = Map.of(
+        'A', new Cube('A', 50,99,0,49),
+        'B', new Cube('B', 100,149,0,49),
+        'C', new Cube('C', 50,99,50,99),
+        'D', new Cube('D', 50,99,100,149),
+        'E', new Cube('E', 0,49,100,149),
+        'F', new Cube('F', 0,0,150,199));
+
+    public void getNextCube(Grid grid) {
+        final var cube = getCube(grid.currentX, grid.currentY);
+        final var direction = grid.currentDirection;
+        if (cube.name == 'A') {
+            switch (direction) {
+                case 0 -> {
+                    grid.currentDirection = 0; //B
+                    grid.currentX = cubes.get('B').x1;
+                    grid.currentY = grid.currentY;
+                }
+                case 1 -> {
+                    grid.currentDirection = 1; //C
+                    grid.currentX = grid.currentX + 1;
+                    grid.currentY = grid.currentY;;
+                }
+                case 2 -> {
+                    grid.currentDirection = 0; //E
+                    grid.currentX = cubes.get('E').x1;
+                    grid.currentY = cubes.get('E').y1 + cubes.get('A').y2 - grid.currentY;
+                }
+                case 3 -> {
+                    grid.currentDirection = 0; //F
+                    grid.currentX = cubes.get('F').x1;
+                    grid.currentY = cubes.get('F').y1 + cubes.get('A').x2 - grid.currentX;
+
+                }
+                default -> throw new RuntimeException();
+            }
+        } else if (cube.name == 'B') {
+            switch (direction) {
+                case 0 -> {
+                    grid.currentDirection = 2; //D
+                    grid.currentX = cubes.get('D').x2;
+
+                }
+                case 1 -> {
+                    grid.currentDirection = 2; //C
+                    grid.currentX = cubes.get('C').x2;
+                }
+                case 2 -> {
+                    grid.currentDirection = 2; //A
+                    grid.currentX = cubes.get('A').x2;
+                }
+                case 3 -> {
+                    grid.currentDirection = 3; //F
+
+                    grid.currentY = cubes.get('F').y2;
+                }
+                default -> throw new RuntimeException();
+            }
+        } else if (cube.name == 'C') {
+            switch (direction) {
+                case 0 -> {
+                    grid.currentDirection = 3; //B
+
+                    grid.currentY = cubes.get('B').y2;
+                }
+                case 1 -> {
+                    grid.currentDirection = 1; //D
+                    grid.currentX = cubes.get('D').x1;
+                }
+                case 2 -> {
+                    grid.currentDirection = 1; //E
+                    grid.currentX = cubes.get('E').x1;
+                }
+                case 3 -> {
+                    grid.currentDirection = 3; //A
+
+                    grid.currentY = cubes.get('A').y2;
+                }
+                default -> throw new RuntimeException();
+            }
+        } else if (cube.name == 'D') {
+            switch (direction) {
+                case 0 -> {
+                    grid.currentDirection = 0; //B
+                }
+                case 1 -> {
+                    grid.currentDirection = 1; //C
+                    grid.currentX = cubes.get('C').x1;
+                }
+                case 2 -> {
+                    grid.currentDirection = 0; //E
+                }
+                case 3 -> {
+                    grid.currentDirection = 0; //F
+                }
+                default -> throw new RuntimeException();
+            }
+        } else if (cube.name == 'E') {
+            switch (direction) {
+                case 0 -> {
+                    grid.currentDirection = 0; //E
+                }
+                case 1 -> {
+                    grid.currentDirection = 1; //F
+                    grid.currentX = cubes.get('F').x1;
+                    grid.currentY = cubes.get('F').y1;
+                }
+                case 2 -> {
+                    grid.currentDirection = 0; //A
+                }
+                case 3 -> {
+                    grid.currentDirection = 0; //C
+                }
+                default -> throw new RuntimeException();
+            }
+        } else if (cube.name == 'F') {
+            switch (direction) {
+                case 0 -> {
+                    grid.currentDirection = 3; //D
+
+                    grid.currentY = cubes.get('D').y2;
+                }
+                case 1 -> {
+                    grid.currentDirection = 1; //B
+                    grid.currentX = cubes.get('B').x1;
+                    grid.currentY = cubes.get('B').y1;
+                }
+                case 2 -> {
+                    grid.currentDirection = 1; //A
+                    grid.currentX = cubes.get('A').x1;
+                    grid.currentY = cubes.get('A').y1;
+                }
+                case 3 -> {
+                    grid.currentDirection = 3; //E
+
+                    grid.currentY = cubes.get('E').y2;
+
+                }
+                default -> throw new RuntimeException();
+            }
         }
-        throw new RuntimeException("Wrong cube");
+    }
+    public record Cube(Character name, int x1, int x2, int y1, int y2) {
+
     }
 }
